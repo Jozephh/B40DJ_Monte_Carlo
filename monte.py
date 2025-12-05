@@ -1,11 +1,24 @@
 import numpy as np
 import matplotlib.pyplot as plt
+import pandas as pd
+import openpyxl
+
+data0 = pd.read_excel(r"C:\Users\joe\OneDrive - Heriot-Watt University\Uni_Cloud\Year 4\B40DJ_Sus_Mgmt_&_Process_Econ\Assignment 2\Assignment 2.xlsm", sheet_name=0)
+data1 = pd.read_excel(r"C:\Users\joe\OneDrive - Heriot-Watt University\Uni_Cloud\Year 4\B40DJ_Sus_Mgmt_&_Process_Econ\Assignment 2\Assignment 2.xlsm", sheet_name=1)
+data2 = pd.read_excel(r"C:\Users\joe\OneDrive - Heriot-Watt University\Uni_Cloud\Year 4\B40DJ_Sus_Mgmt_&_Process_Econ\Assignment 2\Assignment 2.xlsm", sheet_name=2)
+data3 = pd.read_excel(r"C:\Users\joe\OneDrive - Heriot-Watt University\Uni_Cloud\Year 4\B40DJ_Sus_Mgmt_&_Process_Econ\Assignment 2\Assignment 2.xlsm", sheet_name=3)
+data4 = pd.read_excel(r"C:\Users\joe\OneDrive - Heriot-Watt University\Uni_Cloud\Year 4\B40DJ_Sus_Mgmt_&_Process_Econ\Assignment 2\Assignment 2.xlsm", sheet_name=4)
 
 # -----------------------------
 # 1. BASE CASE (USD)
 # -----------------------------
+
 N_SIM = 10000
-project_life = 20
+
+project_life = data4.iloc[24,6]
+project_life = int(project_life)
+
+
 discount_rate = 0.10  # 10 %
 
 FCI_base   = 37_839_296          # from Year 0
