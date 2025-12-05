@@ -15,11 +15,13 @@ data4 = pd.read_excel(r"C:\Users\joe\OneDrive - Heriot-Watt University\Uni_Cloud
 
 N_SIM = 10000
 
-project_life = data4.iloc[24,6]
-project_life = int(project_life)
+# 20 year plant life
+project_life = 20
 
+# pull discount rate from excel sheet
+discount_rate = data4.iloc[1,13]
+discount_rate = int(discount_rate)
 
-discount_rate = 0.10  # 10 %
 
 FCI_base   = 37_839_296          # from Year 0
 Revenues_base = 225_717_722      # from table
