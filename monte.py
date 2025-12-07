@@ -13,7 +13,7 @@ data4 = pd.read_excel(r"C:\Users\joe\OneDrive - Heriot-Watt University\Uni_Cloud
 # 1. BASE CASE
 # -----------------------------
 
-N_SIM = 10000
+N_SIM = 100000
 
 # 20 year plant life
 project_life = 20
