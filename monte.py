@@ -106,23 +106,24 @@ PBT = np.full(N_SIM, np.nan)
 
 N_SIM = 100000
 
-# Capacity factor on revenue: 95–100% of design
-capacity_factor = np.random.uniform(0.95, 1.00, N_SIM)
+# Capacity factor triangular
+capacity_factor = np.random.triangular(0.90, 0.98, 1.00, size=N_SIM)
 
-# product price uncertainty: ±5%
-price_factor = np.random.uniform(0.95, 1.05, N_SIM)
+# Product price triangular
+price_factor = np.random.triangular(0.90, 1.00, 1.10, size=N_SIM)
 
 # Combined revenue factor
 rev_factor = capacity_factor * price_factor
 
 # Raw materials ±5%
-raw_factor = np.random.uniform(0.95, 1.05, N_SIM)
+raw_factor = np.random.triangular(0.95, 1.00, 1.05, size=N_SIM)
 
 # OPEX excl raw ±40%
-opex_ex_factor = np.random.uniform(0.60, 1.40, N_SIM)
+opex_ex_factor = np.random.triangular(0.60, 1.00, 1.40, size=N_SIM)
 
-# CAPEX –10% to +50% - A more realistic CAPEX uncertainty
-capex_factor = np.random.uniform(0.90, 1.50, N_SIM)
+# CAPEX –10% to +50% - A more realistic CAPEX uncertainty: lognotmal probability distribution used as projects more likely to overrun than not
+capex_factor = np.random.lognormal(mean=0, sigma=0.25, size=N_SIM)
+capex_factor = 0.9 + (capex_factor - np.mean(capex_factor)) * 0.5
 
 # 20% chance that year 1 revenue is zero
 rev_year1_zero_flag = np.random.rand(N_SIM) < 0.20
