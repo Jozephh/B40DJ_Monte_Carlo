@@ -52,26 +52,12 @@ opex_ex_raw_base = 30290547 #float(data3.iloc[29, 3])
 depreciation_base = float(data4.iloc[5, 10])
 
 # -------------------------------------------------------
-# 2. NPV FUNCTION
+# 2. BASE CASHFLOW & NPV
 # -------------------------------------------------------
 
-def calc_NPV_after_tax(FCI, revenue, raw_cost, opex_ex_raw,
-                       depreciation, scrap, tax_rate, discount_rate,
-                       project_life=20):
-    """
-    After-tax NPV:
-      - Year 0: CF0 = -FCI
-      - Years 1..(N-1):
-          taxable_income = revenue - (raw + other opex) - depreciation
-          tax            = tax_rate * taxable_income
-          CF             = taxable_income - tax + depreciation
-      - Year N:
-          taxable_income_final = revenue - (raw + other opex) - depreciation + scrap
-          tax_final            = tax_rate * taxable_income_final
-          CF_final             = taxable_income_final - tax_final + depreciation
-        => CF_final = normal after-tax CF + scrap*(1 - tax_rate)
-    """
-    years = np.arange(project_life + 1)
+def build_after_tax_CF(FCI, revenue, raw_cost, opex_ex_raw,
+                       depreciation, scrap, tax_rate, project_life):
+
     CF = np.zeros(project_life + 1)
 
     # Year 0
@@ -79,29 +65,29 @@ def calc_NPV_after_tax(FCI, revenue, raw_cost, opex_ex_raw,
 
     total_opex = raw_cost + opex_ex_raw
 
-    # --- Years 1..project_life-1 ---
+    # Years 1..(N-1): constant operating CF
     taxable_income = revenue - total_opex - depreciation
     tax = tax_rate * taxable_income if taxable_income > 0 else 0.0
     after_tax_CF = taxable_income - tax + depreciation
-
     CF[1:project_life] = after_tax_CF
 
-    # --- Final year: include scrap as taxable ---
+    # Final year: same operating CF + scrap
     taxable_income_final = revenue - total_opex - depreciation + scrap
     tax_final = tax_rate * taxable_income_final if taxable_income_final > 0 else 0.0
     CF[project_life] = taxable_income_final - tax_final + depreciation
 
-    # NPV
-    NPV = np.sum(CF / (1 + discount_rate) ** years)
-    return NPV, CF
+    return CF
 
-# Base-case NPV check
-NPV_base, CF_base = calc_NPV_after_tax(
-    FCI_base, Revenue_base, rawmat_cost_base,
-    opex_ex_raw_base, depreciation_base,
-    scrap_base, tax_rate, discount_rate
-)
-print(f"\nBase-case after-tax NPV = {NPV_base/1e6:.2f} million USD")
+# Base-case CF and NPV/IRR check
+years = np.arange(project_life + 1)
+CF_base = build_after_tax_CF(FCI_base, Revenue_base, rawmat_cost_base,
+                             opex_ex_raw_base, depreciation_base,
+                             scrap_base, tax_rate_base, project_life)
+NPV_base = np.sum(CF_base / (1 + discount_rate_base) ** years)
+IRR_base = nf.irr(CF_base)
+
+print(f"\nBase-case NPV = {NPV_base/1e6:.2f} million USD")
+print(f"Base-case IRR               = {IRR_base*100:.2f} %")
 
 # -------------------------------------------------------
 # 3. MONTE CARLO SETUP
