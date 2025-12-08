@@ -29,8 +29,6 @@ tax_rate_base = 0.20       # base tax rate (20 %)
 
 # Discount rate (ensure decimal, not 10 for 10 %)
 discount_rate_base = float(data4.iloc[1, 17])
-if discount_rate_base > 1:
-    discount_rate_base /= 100.0
 
 # CAPEX / FCI
 FCI_base = float(data4.iloc[2, 4])
@@ -121,10 +119,9 @@ PBT = np.full(N_SIM, np.nan)
 N_SIM = 100000
 
 # Capacity factor on revenue: 95–100% of design
-# Capacity: 95–100%
 capacity_factor = np.random.uniform(0.95, 1.00, N_SIM)
 
-# product price uncertainty: ±10%
+# product price uncertainty: ±5%
 price_factor = np.random.uniform(0.95, 1.05, N_SIM)
 
 # Combined revenue factor
@@ -136,7 +133,7 @@ raw_factor = np.random.uniform(0.95, 1.05, N_SIM)
 # OPEX excl raw ±40%
 opex_ex_factor = np.random.uniform(0.60, 1.40, N_SIM)
 
-# CAPEX –10% to +50% - A more realistic CAPEX factor
+# CAPEX –10% to +50% - A more realistic CAPEX uncertainty
 capex_factor = np.random.uniform(0.90, 1.50, N_SIM)
 
 # 20% chance that year 1 revenue is zero
