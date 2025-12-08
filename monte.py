@@ -213,25 +213,23 @@ corr_raw     = np.corrcoef(raw_factor,     NPV)[0, 1]
 corr_opex_ex = np.corrcoef(opex_ex_factor, NPV)[0, 1]
 corr_capex   = np.corrcoef(capex_factor,   NPV)[0, 1]
 
-mean_IRR = np.nanmean(IRR)   # as fraction
-p50_IRR = np.nanpercentile(IRR, 50)
-mean_PI  = np.nanmean(PI)
+mean_IRR = np.nanmean(IRR)
+median_IRR = np.nanpercentile(IRR, 50)
 mean_PBT = np.nanmean(PBT)
 
 print("\n--- Monte Carlo results ---")
-print(f"Mean NPV      = ${mean_NPV/1e6:.2f} M")
-print(f"P(NPV > 0)    = {prob_positive*100:.1f} %")
+print(f"Mean NPV       = ${mean_NPV/1e6:.2f} M")
+print(f"P(NPV > 0)     = {prob_positive*100:.1f} %")
 print("Correlation with NPV:")
-print(f"Revenue factor:         {corr_rev:.3f}")
-print(f"Raw material factor:    {corr_raw:.3f}")
-print(f"OPEX excl raw factor:   {corr_opex_ex:.3f}")
-print(f"CAPEX factor:           {corr_capex:.3f}")
+print(f"  Revenue factor       : {corr_rev:.3f}")
+print(f"  Raw material factor  : {corr_raw:.3f}")
+print(f"  OPEX excl raw factor : {corr_opex_ex:.3f}")
+print(f"  CAPEX factor         : {corr_capex:.3f}")
 
 print("\n--- Extra financial metrics ---")
-print(f"Mean IRR      = {mean_IRR*100:.2f} %")
-print(f"Median IRR    = {p50_IRR*100:.3f} %")
-print(f"Mean PI       = {mean_PI:.3f}")
-print(f"Mean Payback Time  = {mean_PBT:.2f} years")
+print(f"Mean IRR       = {mean_IRR*100:.2f} %")
+print(f"Median IRR     = {median_IRR*100:.2f} %")
+print(f"Mean Payback   = {mean_PBT:.2f} years")
 
 # -------------------------------------------------------
 # 6. PLOTS
