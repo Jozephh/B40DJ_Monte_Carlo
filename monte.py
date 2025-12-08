@@ -154,38 +154,36 @@ PBT = np.full(N_SIM, np.nan)
 
 for i in range(N_SIM):
 
-    # Apply random factors
+    # Sampled parameters
     R        = Revenue_base * rev_factor[i]
     raw_cost = rawmat_cost_base * raw_factor[i]
     opex_ex  = opex_ex_raw_base * opex_ex_factor[i]
     FCI      = FCI_base * capex_factor[i]
     scrap    = scrap_base * capex_factor[i]
-    dep      = depreciation_base  # keep depreciation fixed
+    dep      = depreciation_base
 
-    # Compute after-tax NPV and cash flows for this scenario
-    NPV_i, CF_i = calc_NPV_after_tax(
-        FCI, R, raw_cost, opex_ex,
-        dep, scrap, tax_rate, discount_rate,
-        project_life=project_life
-    )
+    # Build base after-tax CF (no failures yet)
+    CF_i = build_after_tax_CF(FCI, R, raw_cost, opex_ex, dep, scrap, tax_rate_base, project_life)
+
+    total_opex_i = raw_cost + opex_ex
+
+    # ---- 20% chance Year 1 revenue = 0 (commissioning delay) ----
+    # Revenue = 0, still pay full OPEX; taxable income negative -> tax = 0
+    # So CF1 = - total_opex
+    if rev_year1_zero_flag[i]:
+        CF_i[1] = -total_opex_i
+
+    # ---- NPV with scenario-specific discount rate ----
+    NPV_i = np.sum(CF_i / (1 + discount_rate_base) ** years)
     NPV[i] = NPV_i
 
-    # --- IRR ---
+    # ---- IRR ----
     try:
-        irr_val = nf.irr(CF_i)
-        IRR[i] = irr_val
+        IRR[i] = nf.irr(CF_i)
     except Exception:
         IRR[i] = np.nan
 
-    # --- Profitability Index (PI) ---
-    # PI = PV(positive CF from year 1..N) / |initial investment|
-    pv_positive = np.sum(CF_i[1:] / (1 + discount_rate) ** years[1:])
-    if CF_i[0] < 0:
-        PI[i] = pv_positive / (-CF_i[0])
-    else:
-        PI[i] = np.nan
-
-    # --- Payback Time ---
+    # ---- Payback Time ----
     cum = 0.0
     pbt_val = np.nan
     for t in range(project_life + 1):
@@ -195,7 +193,6 @@ for i in range(N_SIM):
             if t == 0:
                 pbt_val = 0.0
             else:
-                # Linear interpolation between t-1 and t
                 if CF_i[t] != 0:
                     frac = (0 - prev_cum) / CF_i[t]
                     pbt_val = (t - 1) + frac
