@@ -126,7 +126,7 @@ raw_factor = np.random.triangular(0.95, 1.00, 1.05, size=N_SIM)
 # OPEX excl raw ±40%
 opex_ex_factor = np.random.triangular(0.60, 1.00, 1.40, size=N_SIM)
 
-# CAPEX –10% to +50% - A more realistic CAPEX uncertainty: lognotmal probability distribution used as projects more likely to overrun than not
+# CAPEX –10% to +50% - A more realistic CAPEX uncertainty: lognormal probability distribution used as projects more likely to overrun than not
 capex_factor = np.random.lognormal(mean=0, sigma=0.25, size=N_SIM)
 capex_factor = 0.9 + (capex_factor - np.mean(capex_factor)) * 0.5
 
@@ -217,7 +217,7 @@ print(f"  Raw material factor  : {corr_raw:.3f}")
 print(f"  OPEX excl raw factor : {corr_opex_ex:.3f}")
 print(f"  CAPEX factor         : {corr_capex:.3f}")
 
-print("\n--- Extra financial metrics ---")
+print("\n--- Financial metrics ---")
 print(f"Mean IRR       = {mean_IRR*100:.2f} %")
 print(f"Median IRR     = {median_IRR*100:.2f} %")
 print(f"Mean Payback   = {mean_PBT:.2f} years")
