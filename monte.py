@@ -94,18 +94,6 @@ print(f"Base-case IRR               = {IRR_base*100:.2f} %")
 N_SIM = 100000 # Number of simulations
 years = np.arange(project_life + 1)
 
-# Uncertainty ranges 
-rev_low, rev_high         = 0.6, 1.4   # ±40% on revenue (product price)
-raw_low, raw_high         = 0.6, 1.4   # ±40% on raw materials price
-opex_ex_low, opex_ex_high = 0.6, 1.4   # ±40% on OPEX excl. raw
-capex_low, capex_high     = 0.6, 1.4   # ±40% on FCI and scrap
-
-# Sample random multipliers
-rev_factor      = np.random.uniform(rev_low,     rev_high,     N_SIM)
-raw_factor      = np.random.uniform(raw_low,     raw_high,     N_SIM)
-opex_ex_factor  = np.random.uniform(opex_ex_low, opex_ex_high, N_SIM)
-capex_factor    = np.random.uniform(capex_low,   capex_high,   N_SIM)
-
 # Arrays to store results
 NPV = np.zeros(N_SIM)
 IRR = np.full(N_SIM, np.nan)
