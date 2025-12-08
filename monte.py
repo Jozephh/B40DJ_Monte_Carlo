@@ -11,7 +11,7 @@ import numpy_financial as nf
 # Please download the xlsm file and change the file path to match it's location, otherwise the file will not run correctly. 
 # Alternatively, copy the values from the file, change the code and input them below.
 
-file_path = r"C:\Users\joe\OneDrive - Heriot-Watt University\Uni_Cloud\Year 4\B40DJ_Sus_Mgmt_&_Process_Econ\Assignment 2\Assignment 2.xlsm" 
+file_path = r"C:\Users\joe\OneDrive - Heriot-Watt University\Uni_Cloud\Year 4\B40DJ_Sus_Mgmt_&_Process_Econ\Assignment 2\Assignment 2.xlsm"
 
 data0 = pd.read_excel(file_path, sheet_name=0)
 data1 = pd.read_excel(file_path, sheet_name=1)
@@ -20,33 +20,35 @@ data3 = pd.read_excel(file_path, sheet_name=3)
 data4 = pd.read_excel(file_path, sheet_name=4)
 data5 = pd.read_excel(file_path, sheet_name=5)
 
-project_life = 20
-tax_rate = 0.20  # 20% tax
+project_life = 20          
+tax_rate_base = 0.20       # base tax rate (20 %)
 
 # -------------------------------------------------------
-# 1. BASE-CASE VALUES 
+# 1. BASE-CASE VALUES
 # -------------------------------------------------------
 
-# Discount rate
-discount_rate = float(data4.iloc[1, 17])
+# Discount rate (ensure decimal, not 10 for 10 %)
+discount_rate_base = float(data4.iloc[1, 17])
+if discount_rate_base > 1:
+    discount_rate_base /= 100.0
 
 # CAPEX / FCI
 FCI_base = float(data4.iloc[2, 4])
 
 # Annual revenue (base case)
-Revenue_base = float(data4.iloc[17, 3])
+Revenue_base = 185500800*0.98 #float(data4.iloc[17, 3]) # 2% hit on product price due to bulk contract
 
 # Sum of equipment cost (for scrap)
 Sigma_Ce = float(data4.iloc[2, 2])
 scrap_base = 0.10 * Sigma_Ce   # pre-tax scrap = 10% of purchased equipment cost
 
 # Annual cost of raw materials at base case (USD/year)
-rawmat_cost_base = float(data3.iloc[12, 6])
+rawmat_cost_base = 136801884*0.9 #float(data3.iloc[12, 6]) 10% discount on feedstock price
 
 # Annual OPEX excluding raw materials (USD/year)
-opex_ex_raw_base = float(data3.iloc[29, 3])
+opex_ex_raw_base = 30290547 #float(data3.iloc[29, 3]) 
 
-# Annual depreciation (same every year, from your Excel table)
+# Annual depreciation (same every year, from Excel)
 depreciation_base = float(data4.iloc[5, 10])
 
 # -------------------------------------------------------
