@@ -84,27 +84,32 @@ CF_base = build_after_tax_CF(FCI_base, Revenue_base, rawmat_cost_base,
 NPV_base = np.sum(CF_base / (1 + discount_rate_base) ** years)
 IRR_base = nf.irr(CF_base)
 
+# ---- Base-case Payback Time (undiscounted) ----
+cum = 0.0
+base_PBT = np.nan
+for t in range(project_life + 1):
+    prev_cum = cum
+    cum += CF_base[t]
+    if cum >= 0:
+        if t == 0:
+            base_PBT = 0.0
+        else:
+            if CF_base[t] != 0:
+                frac = (0 - prev_cum) / CF_base[t]
+                base_PBT = (t - 1) + frac
+            else:
+                base_PBT = float(t)
+        break
+
 print(f"\nBase-case NPV = {NPV_base/1e6:.2f} million USD")
 print(f"Base-case IRR               = {IRR_base*100:.2f} %")
+print(f"Base-case Payback Time     = {base_PBT:.2f} years")
 
 # -------------------------------------------------------
 # 3. MONTE CARLO SETUP
 # -------------------------------------------------------
 
 N_SIM = 100000 # Number of simulations
-years = np.arange(project_life + 1)
-
-# Arrays to store results
-NPV = np.zeros(N_SIM)
-IRR = np.full(N_SIM, np.nan)
-PI  = np.full(N_SIM, np.nan)
-PBT = np.full(N_SIM, np.nan)
-
-# -------------------------------------------------------
-# 3. MONTE CARLO SETUP
-# -------------------------------------------------------
-
-N_SIM = 100000
 
 # Capacity factor triangular
 capacity_factor = np.random.triangular(0.90, 0.98, 1.00, size=N_SIM)
