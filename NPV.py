@@ -79,20 +79,27 @@ def build_after_tax_CF(
     depreciation_schedule = np.zeros(project_life + 1)
     book_values = np.zeros(project_life + 1)
 
+    # Initial book value before operation starts
     book_value = FCI
 
     # CAPEX split over Year 1 and Year 2
     CF[1] = -capex_split_year1 * FCI
     CF[2] = -capex_split_year2 * FCI
 
-    # Depreciation starts when plant operates: Year 3 to Year N
-    for t in range(3, project_life + 1):
+    # Number of operating years = Year 3 to Year project_life inclusive
+    operating_years = project_life - 2
+
+    # Build depreciation schedule from Year 3 to Year N
+    for i, t in enumerate(range(3, project_life + 1), start=1):
+        remaining_years = operating_years - i + 1
+
         if t < project_life:
             depreciation = depreciation_rate * book_value
-            if (book_value - depreciation) < scrap:
+            # Prevent book value dropping below scrap too early
+            if book_value - depreciation < scrap:
                 depreciation = book_value - scrap
         else:
-            # Force final book value to equal scrap
+            # Final year: force ending book value exactly to scrap
             depreciation = book_value - scrap
 
         depreciation_schedule[t] = depreciation
@@ -169,6 +176,10 @@ NPV_base = np.sum(CF_base / (1 + discount_rate_base) ** years)
 IRR_base = nf.irr(CF_base)
 base_PBT = calc_payback_time(CF_base)
 
+# -------------------------------------------------------
+# OUTPUTS
+# -------------------------------------------------------
+
 print(f"\nDepreciation rate used      = {depreciation_rate * 100:.4f}% per year")
 print(f"Initial CAPEX              = {FCI_base:,.2f} USD")
 print(f"Scrap value (10% CAPEX)    = {scrap_base:,.2f} USD")
@@ -178,230 +189,90 @@ print(f"\nBase-case NPV              = {NPV_base/1e6:.2f} million USD")
 print(f"Base-case IRR              = {IRR_base*100:.2f} %")
 print(f"Base-case Payback Time     = {base_PBT:.2f} years")
 
+# Optional table
 # -------------------------------------------------------
-# BUILD FULL FINANCIAL TABLE FOR BASE CASE ONLY
+# BUILD FULL FINANCIAL TABLE
 # -------------------------------------------------------
+
+years = np.arange(project_life + 1)
 
 investments = np.zeros(project_life + 1)
 revenue_array = np.zeros(project_life + 1)
 costs_array = np.zeros(project_life + 1)
-depreciation_array = np.zeros(project_life + 1)
-taxable_income_array = np.zeros(project_life + 1)
 taxes_array = np.zeros(project_life + 1)
 
 # CAPEX
 investments[1] = capex_split_year1 * FCI_base
 investments[2] = capex_split_year2 * FCI_base
 
-# OPEX
-total_opex_base = rawmat_cost_base + opex_ex_raw_base
+# Costs
+total_opex = rawmat_cost_base + opex_ex_raw_base
 
 for t in range(3, project_life + 1):
+
     if t == 3:
         revenue_array[t] = startup_factor * Revenue_base
-        costs_array[t] = startup_factor * total_opex_base
+        costs_array[t] = startup_factor * total_opex
     else:
         revenue_array[t] = Revenue_base
-        costs_array[t] = total_opex_base
+        costs_array[t] = total_opex
 
     # depreciation
-    depreciation_array[t] = depreciation_schedule_base[t]
+    depr = depreciation_schedule_base[t]
 
-    # taxable income = (revenue - opex) - depreciation
-    taxable_income = (revenue_array[t] - costs_array[t]) - depreciation_array[t]
+    taxable_income = revenue_array[t] - costs_array[t] - depr
 
-    # final year includes scrap in taxable income
     if t == project_life:
         taxable_income += scrap_base
 
-    taxable_income_array[t] = taxable_income
-    taxes_array[t] = tax_rate_base * taxable_income if taxable_income > 0 else 0.0
+    tax = tax_rate_base * taxable_income if taxable_income > 0 else 0
+    taxes_array[t] = tax
 
+# Annual NCF already calculated
 annual_ncf = CF_base
 cumulative_ncf = np.cumsum(annual_ncf)
 
-base_case_table = pd.DataFrame({
+# -------------------------------------------------------
+# CREATE TABLE
+# -------------------------------------------------------
+
+table = pd.DataFrame({
     "Year": years,
     "Investments ($)": investments,
     "Revenue ($)": revenue_array,
     "Costs ($)": costs_array,
-    "Depreciation ($)": depreciation_array,
-    "Taxable Income ($)": taxable_income_array,
     "Taxes ($)": taxes_array,
     "Annual NCF ($)": annual_ncf,
     "Cumulative NCF ($)": cumulative_ncf
 })
+
+# -------------------------------------------------------
+# ADD TOTAL ROW
+# -------------------------------------------------------
 
 totals = pd.DataFrame({
     "Year": ["Total"],
     "Investments ($)": [investments.sum()],
     "Revenue ($)": [revenue_array.sum()],
     "Costs ($)": [costs_array.sum()],
-    "Depreciation ($)": [depreciation_array.sum()],
-    "Taxable Income ($)": [taxable_income_array.sum()],
     "Taxes ($)": [taxes_array.sum()],
     "Annual NCF ($)": [""],
     "Cumulative NCF ($)": [""]
 })
 
-base_case_table = pd.concat([base_case_table, totals], ignore_index=True)
+table = pd.concat([table, totals], ignore_index=True)
 
-pd.set_option("display.max_rows", None)
-pd.set_option("display.max_columns", None)
-pd.set_option("display.width", None)
-pd.set_option("display.float_format", "{:,.2f}".format)
+# -------------------------------------------------------
+# PRINT FULL TABLE
+# -------------------------------------------------------
 
-print("\nFull Financial Table (Base Case Only):")
-print(base_case_table.to_string(index=False))
+pd.set_option('display.max_rows', None)
+pd.set_option('display.max_columns', None)
+pd.set_option('display.width', None)
+pd.set_option('display.float_format', '{:,.2f}'.format)
 
-# ------------------
-# MONTE CARLO SETUP
-# ------------------
+print("\nFull Financial Table:")
+print(table.to_string(index=False))
 
-N_SIM = 50000
-
-capacity_factor = np.random.triangular(0.90, 0.98, 1.00, size=N_SIM)
-price_factor = np.random.triangular(0.90, 1.00, 1.10, size=N_SIM)
-rev_factor = capacity_factor * price_factor
-
-raw_factor = np.random.triangular(0.90, 1.00, 1.10, size=N_SIM)
-opex_ex_factor = np.random.triangular(0.60, 1.00, 1.40, size=N_SIM)
-
-capex_factor = np.random.lognormal(mean=0, sigma=0.25, size=N_SIM)
-capex_factor = 0.9 + (capex_factor - np.mean(capex_factor)) * 0.5
-
-NPV = np.zeros(N_SIM)
-IRR = np.full(N_SIM, np.nan)
-PI  = np.full(N_SIM, np.nan)
-PBT = np.full(N_SIM, np.nan)
-
-# -----------------
-# PROGRESS TRACKER
-# -----------------
-
-def print_progress(i, total, start_time, last_printed_pct):
-    pct = int((i / total) * 100)
-    if pct > last_printed_pct:
-        elapsed = time.time() - start_time
-        if i > 0:
-            est_total = elapsed * total / i
-            remaining = est_total - elapsed
-        else:
-            remaining = np.nan
-
-        print(
-            f"\rProgress: {pct:3d}% | "
-            f"Elapsed: {elapsed:7.1f}s | "
-            f"ETA: {remaining:7.1f}s",
-            end="",
-            flush=True
-        )
-        return pct
-    return last_printed_pct
-
-
-# -----------------
-# MONTE CARLO LOOP
-# -----------------
-
-start_time = time.time()
-last_printed_pct = -1
-
-for i in range(N_SIM):
-    R = Revenue_base * rev_factor[i]
-    raw_cost = rawmat_cost_base * raw_factor[i]
-    opex_ex = opex_ex_raw_base * opex_ex_factor[i]
-    FCI = FCI_base * capex_factor[i]
-    scrap = 0.10 * FCI
-
-    CF_i, _, _ = build_after_tax_CF(
-        FCI=FCI,
-        revenue=R,
-        raw_cost=raw_cost,
-        opex_ex_raw=opex_ex,
-        depreciation_rate=depreciation_rate,
-        scrap=scrap,
-        tax_rate=tax_rate_base,
-        project_life=project_life,
-        startup_factor=startup_factor
-    )
-
-    NPV_i = np.sum(CF_i / (1 + discount_rate_base) ** years)
-    NPV[i] = NPV_i
-
-    try:
-        IRR[i] = nf.irr(CF_i)
-    except Exception:
-        IRR[i] = np.nan
-
-    pv_inflows = np.sum(CF_i[CF_i > 0] / (1 + discount_rate_base) ** years[CF_i > 0])
-    pv_outflows = -np.sum(CF_i[CF_i < 0] / (1 + discount_rate_base) ** years[CF_i < 0])
-    PI[i] = pv_inflows / pv_outflows if pv_outflows > 0 else np.nan
-
-    PBT[i] = calc_payback_time(CF_i)
-
-    last_printed_pct = print_progress(i + 1, N_SIM, start_time, last_printed_pct)
-
-print()
-
-# --------------
-# SUMMARY STATS
-# --------------
-
-mean_NPV = np.mean(NPV)
-prob_positive = np.mean(NPV > 0)
-
-corr_rev     = np.corrcoef(rev_factor, NPV)[0, 1]
-corr_raw     = np.corrcoef(raw_factor, NPV)[0, 1]
-corr_opex_ex = np.corrcoef(opex_ex_factor, NPV)[0, 1]
-corr_capex   = np.corrcoef(capex_factor, NPV)[0, 1]
-
-mean_IRR = np.nanmean(IRR)
-median_IRR = np.nanpercentile(IRR, 50)
-mean_PBT = np.nanmean(PBT)
-mean_PI = np.nanmean(PI)
-
-print("\n--- Monte Carlo results ---")
-print(f"Mean NPV       = ${mean_NPV/1e6:.2f} M")
-print(f"P(NPV > 0)     = {prob_positive*100:.1f} %")
-print("Correlation with NPV:")
-print(f"  Revenue factor       : {corr_rev:.3f}")
-print(f"  Raw material factor  : {corr_raw:.3f}")
-print(f"  OPEX excl raw factor : {corr_opex_ex:.3f}")
-print(f"  CAPEX factor         : {corr_capex:.3f}")
-
-print("\n--- Financial metrics ---")
-print(f"Mean IRR       = {mean_IRR*100:.2f} %")
-print(f"Median IRR     = {median_IRR*100:.2f} %")
-print(f"Mean Payback   = {mean_PBT:.2f} years")
-print(f"Mean PI        = {mean_PI:.2f}")
-
-# ------
-# PLOTS
-# ------
-
-NPV_M = NPV / 1e6
-
-plt.figure(figsize=(8, 5))
-plt.hist(NPV_M, bins=40, edgecolor='black', alpha=0.7)
-plt.axvline(mean_NPV/1e6, linestyle='--', label=f"Mean = {mean_NPV/1e6:.1f} M")
-plt.xlabel("NPV [million USD]")
-plt.ylabel("Frequency")
-plt.title("Monte Carlo NPV Distribution")
-plt.legend()
-plt.tight_layout()
-
-NPV_sorted = np.sort(NPV_M)
-cum_prob = np.linspace(0, 1, N_SIM)
-
-plt.figure(figsize=(8, 5))
-plt.plot(NPV_sorted, cum_prob, linewidth=2)
-plt.axvline(0, linestyle='--', color='red', label="NPV = 0")
-plt.axvline(mean_NPV/1e6, linestyle='--', color='green', label="Mean case NPV")
-plt.xlabel("NPV [million USD]")
-plt.ylabel("Cumulative probability")
-plt.title("Cumulative Distribution of NPV (Monte Carlo)")
-plt.grid(True, alpha=0.3)
-plt.legend()
-plt.tight_layout()
-plt.show()
+print("\nCash flow summary:")
+print(table.round(2))
