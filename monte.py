@@ -270,9 +270,9 @@ mean_M = mean_NPV / 1e6
 # Probability of negative NPV
 prob_negative = np.mean(NPV_M < 0)
 
-# ---------------------
-# 1. CDF – PERCENTILES
-# ---------------------
+# ------------------
+# CDF – PERCENTILES
+# ------------------
 
 plt.figure(figsize=(8, 5))
 plt.plot(NPV_sorted, cum_prob, linewidth=2)
@@ -295,9 +295,9 @@ plt.grid(True, alpha=0.3)
 plt.legend()
 plt.tight_layout()
 
-# -----------------------
-# 2. CDF – DECISION VIEW
-# -----------------------
+# --------------------
+# CDF – DECISION VIEW
+# --------------------
 
 plt.figure(figsize=(8, 5))
 plt.plot(NPV_sorted, cum_prob, linewidth=2)
@@ -313,7 +313,7 @@ plt.legend()
 plt.tight_layout()
 
 # ------------------------
-# 3. HISTOGRAM – MEAN NPV
+# HISTOGRAM – MEAN NPV
 # ------------------------
 
 plt.figure(figsize=(8, 5))
