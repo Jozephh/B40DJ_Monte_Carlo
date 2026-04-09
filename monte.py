@@ -8,9 +8,9 @@ project_life = 30
 tax_rate_base = 0.15
 discount_rate_base = 0.07
 
-# -------------------------------------------------------
+# -------------
 # INPUT VALUES
-# -------------------------------------------------------
+# -------------
 
 FCI_base = 75_331_279
 Revenue_base = 247_199_320
@@ -112,7 +112,7 @@ def calc_payback_time(CF):
 # MONTE CARLO SETUP
 # ------------------
 
-N_SIM = 50000
+N_SIM = 100000
 years = np.arange(project_life + 1)
 
 capacity_factor = np.random.triangular(0.90, 0.98, 1.00, size=N_SIM)
@@ -123,7 +123,7 @@ raw_factor = np.random.triangular(0.90, 1.00, 1.10, size=N_SIM)
 opex_ex_factor = np.random.triangular(0.60, 1.00, 1.40, size=N_SIM)
 
 capex_factor = np.random.lognormal(mean=0, sigma=0.25, size=N_SIM)
-capex_factor = 0.9 + (capex_factor - np.mean(capex_factor)) * 0.5
+capex_factor = capex_factor / np.mean(capex_factor)
 
 # Tax and discount rate varied
 tax_rate_sim = np.random.triangular(0.10, 0.15, 0.25, size=N_SIM)
@@ -211,6 +211,12 @@ print()
 mean_NPV = np.mean(NPV)
 prob_positive = np.mean(NPV > 0)
 
+P10 = np.percentile(NPV, 10)
+P25 = np.percentile(NPV, 25)
+P50 = np.percentile(NPV, 50)
+P75 = np.percentile(NPV, 75)
+P90 = np.percentile(NPV, 90)
+
 corr_rev      = np.corrcoef(rev_factor, NPV)[0, 1]
 corr_raw      = np.corrcoef(raw_factor, NPV)[0, 1]
 corr_opex_ex  = np.corrcoef(opex_ex_factor, NPV)[0, 1]
@@ -226,6 +232,9 @@ mean_PI = np.nanmean(PI)
 print("\n--- Monte Carlo results ---")
 print(f"Mean NPV       = ${mean_NPV/1e6:.2f} M")
 print(f"P(NPV > 0)     = {prob_positive*100:.1f} %")
+print(f"50% NPV range = ${P25/1e6:.2f} M to ${P75/1e6:.2f} M")
+print(f"80% NPV range = ${P10/1e6:.2f} M to ${P90/1e6:.2f} M")
+
 print("Correlation with NPV:")
 print(f"  Revenue factor       : {corr_rev:.3f}")
 print(f"  Raw material factor  : {corr_raw:.3f}")
@@ -246,26 +255,79 @@ print(f"Mean PI        = {mean_PI:.2f}")
 
 NPV_M = NPV / 1e6
 
-plt.figure(figsize=(8, 5))
-plt.hist(NPV_M, bins=40, edgecolor='black', alpha=0.7)
-plt.axvline(mean_NPV/1e6, linestyle='--', label=f"Mean = {mean_NPV/1e6:.1f} M")
-plt.xlabel("NPV [million USD]")
-plt.ylabel("Frequency")
-plt.title("Monte Carlo NPV Distribution")
-plt.legend()
-plt.tight_layout()
-
+# Sort for CDF
 NPV_sorted = np.sort(NPV_M)
 cum_prob = np.linspace(0, 1, N_SIM)
 
+# Percentiles
+P10 = np.percentile(NPV_M, 10)
+P25 = np.percentile(NPV_M, 25)
+P50 = np.percentile(NPV_M, 50)
+P75 = np.percentile(NPV_M, 75)
+P90 = np.percentile(NPV_M, 90)
+mean_M = mean_NPV / 1e6
+
+# Probability of negative NPV
+prob_negative = np.mean(NPV_M < 0)
+
+# ---------------------
+# 1. CDF – PERCENTILES
+# ---------------------
+
 plt.figure(figsize=(8, 5))
-plt.plot(NPV_sorted, cum_prob, linewidth=2)
-plt.axvline(0, linestyle='--', color='red', label="NPV = 0")
-plt.axvline(mean_NPV/1e6, linestyle='--', color='green', label="Mean Monte Carlo NPV")
+plt.plot(NPV_sorted, cum_prob, linewidth=2, color='blue')
+
+# Risk range (P10–P90): red
+plt.axvline(P10, linestyle='--', color='red', label="P10–P90 (Risk Range)")
+plt.axvline(P90, linestyle='--', color='red')
+
+# Typical range (P25–P75): orange
+plt.axvline(P25, linestyle='--', color='orange', label="P25–P75 (Typical Range)")
+plt.axvline(P75, linestyle='--', color='orange')
+
+# Median: green
+plt.axvline(P50, linestyle='--', color='green', label="P50 (Median)")
+
 plt.xlabel("NPV [million USD]")
 plt.ylabel("Cumulative probability")
-plt.title("Cumulative Distribution of NPV (Monte Carlo)")
+plt.title("CDF of NPV (Percentile Ranges)")
 plt.grid(True, alpha=0.3)
 plt.legend()
 plt.tight_layout()
+
+# -----------------------
+# 2. CDF – DECISION VIEW
+# -----------------------
+
+plt.figure(figsize=(8, 5))
+plt.plot(NPV_sorted, cum_prob, linewidth=2)
+
+plt.axvline(0, linestyle='--', color='red', label="NPV = 0")
+plt.axvline(mean_M, linestyle='--', color='green', label=f"Mean = {mean_M:.1f} M")
+
+plt.xlabel("NPV [million USD]")
+plt.ylabel("Cumulative probability")
+plt.title("CDF of NPV (Decision Metrics)")
+plt.grid(True, alpha=0.3)
+plt.legend()
+plt.tight_layout()
+
+# ------------------------
+# 3. HISTOGRAM – MEAN NPV
+# ------------------------
+
+plt.figure(figsize=(8, 5))
+plt.hist(NPV_M, bins=40, edgecolor='black', alpha=0.7)
+
+# Mean line
+plt.axvline(mean_M, linestyle='--', color='green', linewidth=2,
+            label=f"Mean = {mean_M:.1f} M")
+
+plt.xlabel("NPV [million USD]")
+plt.ylabel("Frequency")
+plt.title("Monte Carlo NPV Distribution (Mean)")
+plt.grid(True, alpha=0.3)
+plt.legend()
+plt.tight_layout()
+
 plt.show()
