@@ -275,7 +275,7 @@ prob_negative = np.mean(NPV_M < 0)
 # ---------------------
 
 plt.figure(figsize=(8, 5))
-plt.plot(NPV_sorted, cum_prob, linewidth=2, color='blue')
+plt.plot(NPV_sorted, cum_prob, linewidth=2)
 
 # Risk range (P10–P90): red
 plt.axvline(P10, linestyle='--', color='red', label="P10–P90 (Risk Range)")
