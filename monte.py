@@ -120,7 +120,7 @@ price_factor = np.random.triangular(0.90, 1.00, 1.10, size=N_SIM)
 rev_factor = capacity_factor * price_factor
 
 raw_factor = np.random.triangular(0.90, 1.00, 1.10, size=N_SIM)
-opex_ex_factor = np.random.triangular(0.60, 1.00, 1.40, size=N_SIM)
+opex_ex_factor = np.random.triangular(0.90, 1.00, 1.10, size=N_SIM)
 
 capex_factor = np.random.lognormal(mean=0, sigma=0.25, size=N_SIM)
 capex_factor = capex_factor / np.mean(capex_factor)
