@@ -27,9 +27,9 @@ depreciation_rate = 1 - (scrap_base / FCI_base) ** (1 / project_life)
 
 print(f"Calculated depreciation rate = {depreciation_rate * 100:.4f}% per year")
 
-# -------------------------------------------------------
+# ----------------
 # CASH FLOW MODEL
-# -------------------------------------------------------
+# ----------------
 
 def build_after_tax_CF(
     FCI,
@@ -107,6 +107,7 @@ def calc_payback_time(CF):
 
     return np.nan
 
+
 # ------------------
 # MONTE CARLO SETUP
 # ------------------
@@ -123,6 +124,10 @@ opex_ex_factor = np.random.triangular(0.60, 1.00, 1.40, size=N_SIM)
 
 capex_factor = np.random.lognormal(mean=0, sigma=0.25, size=N_SIM)
 capex_factor = 0.9 + (capex_factor - np.mean(capex_factor)) * 0.5
+
+# Tax and discount rate varied
+tax_rate_sim = np.random.triangular(0.10, 0.15, 0.25, size=N_SIM)
+discount_rate_sim = np.random.triangular(0.05, 0.07, 0.10, size=N_SIM)
 
 NPV = np.zeros(N_SIM)
 IRR = np.full(N_SIM, np.nan)
@@ -166,6 +171,8 @@ for i in range(N_SIM):
     opex_ex = opex_ex_raw_base * opex_ex_factor[i]
     FCI = FCI_base * capex_factor[i]
     scrap = 0.10 * FCI
+    tax_rate_i = tax_rate_sim[i]
+    discount_rate_i = discount_rate_sim[i]
 
     CF_i = build_after_tax_CF(
         FCI=FCI,
@@ -174,12 +181,12 @@ for i in range(N_SIM):
         opex_ex_raw=opex_ex,
         depreciation_rate=depreciation_rate,
         scrap=scrap,
-        tax_rate=tax_rate_base,
+        tax_rate=tax_rate_i,
         project_life=project_life,
         startup_factor=startup_factor
     )
 
-    NPV_i = np.sum(CF_i / (1 + discount_rate_base) ** years)
+    NPV_i = np.sum(CF_i / (1 + discount_rate_i) ** years)
     NPV[i] = NPV_i
 
     try:
@@ -187,8 +194,8 @@ for i in range(N_SIM):
     except Exception:
         IRR[i] = np.nan
 
-    pv_inflows = np.sum(CF_i[CF_i > 0] / (1 + discount_rate_base) ** years[CF_i > 0])
-    pv_outflows = -np.sum(CF_i[CF_i < 0] / (1 + discount_rate_base) ** years[CF_i < 0])
+    pv_inflows = np.sum(CF_i[CF_i > 0] / (1 + discount_rate_i) ** years[CF_i > 0])
+    pv_outflows = -np.sum(CF_i[CF_i < 0] / (1 + discount_rate_i) ** years[CF_i < 0])
     PI[i] = pv_inflows / pv_outflows if pv_outflows > 0 else np.nan
 
     PBT[i] = calc_payback_time(CF_i)
@@ -204,10 +211,12 @@ print()
 mean_NPV = np.mean(NPV)
 prob_positive = np.mean(NPV > 0)
 
-corr_rev     = np.corrcoef(rev_factor, NPV)[0, 1]
-corr_raw     = np.corrcoef(raw_factor, NPV)[0, 1]
-corr_opex_ex = np.corrcoef(opex_ex_factor, NPV)[0, 1]
-corr_capex   = np.corrcoef(capex_factor, NPV)[0, 1]
+corr_rev      = np.corrcoef(rev_factor, NPV)[0, 1]
+corr_raw      = np.corrcoef(raw_factor, NPV)[0, 1]
+corr_opex_ex  = np.corrcoef(opex_ex_factor, NPV)[0, 1]
+corr_capex    = np.corrcoef(capex_factor, NPV)[0, 1]
+corr_tax      = np.corrcoef(tax_rate_sim, NPV)[0, 1]
+corr_discount = np.corrcoef(discount_rate_sim, NPV)[0, 1]
 
 mean_IRR = np.nanmean(IRR)
 median_IRR = np.nanpercentile(IRR, 50)
@@ -222,6 +231,8 @@ print(f"  Revenue factor       : {corr_rev:.3f}")
 print(f"  Raw material factor  : {corr_raw:.3f}")
 print(f"  OPEX excl raw factor : {corr_opex_ex:.3f}")
 print(f"  CAPEX factor         : {corr_capex:.3f}")
+print(f"  Tax rate             : {corr_tax:.3f}")
+print(f"  Discount rate        : {corr_discount:.3f}")
 
 print("\n--- Financial metrics ---")
 print(f"Mean IRR       = {mean_IRR*100:.2f} %")
