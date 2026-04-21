@@ -134,7 +134,7 @@ def print_progress(i, total, start_time, last_printed_pct):
 # MONTE CARLO SETUP
 # ------------------
 
-N_SIM = 10000
+N_SIM = 100000
 years = np.arange(project_life + 1)
 
 capacity_factor = np.random.triangular(0.90, 0.98, 1.00, size=N_SIM)
@@ -365,7 +365,7 @@ else:
     closeness = 1 - (dist_from_median / max_dist)
 
 # Optional contrast shaping to make center redder
-closeness = closeness ** 0.7
+closeness = closeness ** 0.9
 
 x = years
 segments = []
@@ -396,7 +396,7 @@ ax.add_collection(lc)
 median_path = np.median(cum_dcf_paths, axis=0)
 
 plt.plot(years, median_path, color='black', linewidth=2.5, label='Median path')
-plt.axhline(0, linestyle='--', color='black', linewidth=1.2, alpha=0.7)
+plt.axhline(0, linestyle='--', color='black', linewidth=1.2, alpha=0.8)
 
 ax.set_xlim(x.min(), x.max())
 ax.set_ylim(np.min(cum_dcf_paths_sorted), np.max(cum_dcf_paths_sorted))
